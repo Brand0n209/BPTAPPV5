@@ -6,6 +6,8 @@ WORKDIR /app/client
 COPY client/package*.json ./
 RUN npm install
 COPY client/ ./
+# List the public directory to confirm files were copied correctly
+RUN ls -la public/
 RUN npm run build
 
 # Build stage for server
