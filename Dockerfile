@@ -1,33 +1,30 @@
-# Multi-stage build for BPT Application V5
-
-# Build stage for client
-FROM node:18-alpine AS client-build
-WORKDIR /app/client
-COPY client/package*.json ./
-RUN npm install
-COPY client/ ./
-# List the public directory to confirm files were copied correctly
-RUN ls -la public/
-RUN npm run build
-
-# Build stage for server
-FROM node:18-alpine AS server-build
-WORKDIR /app/server
-COPY server/package*.json ./
-RUN npm install --only=production
-COPY server/ ./
-
-# Production stage
+# Simple Dockerfile for BPTAPPV5
 FROM node:18-alpine
+
+# Create app directory
 WORKDIR /app
 
-# Create a non-root user to run the application
+# Copy server package.json and package-lock.json
+COPY server/package*.json ./
+
+# Install server dependencies
+RUN npm install
+
+# Copy server files
+COPY server/ ./
+
+# Create a public directory for static files
+RUN mkdir -p public
+
+# Create a simple index.html for the public directory
+RUN echo '<!DOCTYPE html><html><head><title>Bright Prodigy Tools</title></head><body><h1>Bright Prodigy Tools API Server</h1><p>API server is running.</p></body></html>' > public/index.html
+
+# Create a non-root user
 RUN addgroup --system appgroup && \
     adduser --system --ingroup appgroup appuser
 
-# Copy built artifacts from build stages
-COPY --from=server-build --chown=appuser:appgroup /app/server ./server
-COPY --from=client-build --chown=appuser:appgroup /app/client/build ./server/public
+# Set ownership
+RUN chown -R appuser:appgroup /app
 
 # Set environment variables
 ENV NODE_ENV=production
@@ -35,9 +32,6 @@ ENV PORT=8080
 
 # Expose the port
 EXPOSE 8080
-
-# Set the working directory to the server
-WORKDIR /app/server
 
 # Switch to non-root user
 USER appuser
