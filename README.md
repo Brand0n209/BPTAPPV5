@@ -110,31 +110,98 @@ GOOGLE_CALENDAR_ID=your-google-calendar-id
 ### Prerequisites
 
 - Google Cloud SDK installed and configured
-- Docker installed
+- Docker installed (for local testing)
 - Access to Google Cloud project with appropriate permissions
+- Artifact Registry repository created
 
-### Steps
+### Automatic Deployment with Cloud Build
 
-1. Build and push the Docker image:
+1. Set up your Google Cloud project and enable required APIs:
 
 ```bash
-# Authenticate with Google Cloud
-gcloud auth login
+# Set your project ID
+export PROJECT_ID=your-project-id
 
-# Configure Docker to use gcloud as a credential helper
-gcloud auth configure-docker
+# Enable required APIs
+gcloud services enable cloudbuild.googleapis.com run.googleapis.com artifactregistry.googleapis.com
 
-# Build and push the image
+# Create Artifact Registry repository
+gcloud artifacts repositories create bpt-app-repo --repository-format=docker --location=us-west2 --description="Repository for BPTAPPV5"
+```
+
+2. Update the substitution variables in `cloudbuild.yaml` if needed:
+
+```yaml
+substitutions:
+  _REGION: us-west2               # Change to your preferred region
+  _REPOSITORY: bpt-app-repo       # Change if you used a different repository name
+```
+
+3. Trigger a build and deployment:
+
+```bash
+# From the repository root
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
-2. Deploy to Cloud Run:
+The Cloud Build configuration will automatically:
+- Build the Docker container
+- Push the image to Artifact Registry
+- Deploy the container to Cloud Run
+
+### Manual Deployment
+
+If you prefer to deploy manually:
+
+1. Build and tag the Docker image locally (requires Docker installed):
 
 ```bash
-gcloud run deploy --image gcr.io/YOUR_PROJECT_ID/bptappv5:latest --platform managed
+docker build -t us-west2-docker.pkg.dev/$PROJECT_ID/bpt-app-repo/bptappv5:latest .
 ```
 
-Alternatively, you can use the automated CI/CD pipeline by pushing to your repository and letting Cloud Build handle the deployment.
+2. Push the image to Artifact Registry:
+
+```bash
+docker push us-west2-docker.pkg.dev/$PROJECT_ID/bpt-app-repo/bptappv5:latest
+```
+
+3. Deploy to Cloud Run:
+
+```bash
+gcloud run deploy bptappv5 \
+  --image us-west2-docker.pkg.dev/$PROJECT_ID/bpt-app-repo/bptappv5:latest \
+  --platform managed \
+  --region us-west2 \
+  --allow-unauthenticated \
+  --memory 512Mi \
+  --set-env-vars NODE_ENV=production
+```
+
+### Monitoring and Logs
+
+After deployment, you can monitor your service and view logs:
+
+```bash
+# View service status
+gcloud run services describe bptappv5 --region us-west2
+
+# View logs
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=bptappv5" --limit=50
+```
+
+### Troubleshooting Deployment Issues
+
+If you encounter deployment issues:
+
+1. Check build logs in Cloud Build:
+   - Go to Google Cloud Console → Cloud Build → History
+   - Click on the latest build to view detailed logs
+
+2. Common issues and solutions:
+   - **Permission issues**: Ensure your Cloud Build service account has the correct permissions
+   - **Missing APIs**: Ensure all required APIs are enabled
+   - **Build failures**: Check the Dockerfile for errors or incompatibilities
+   - **Deployment failures**: Verify service account permissions for Cloud Run
 
 ## Environment Variables for Google Cloud Run
 

@@ -19,7 +19,11 @@ app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // API Routes
-// Health check endpoint
+// Health check endpoints
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', message: 'Server is healthy' });
+});
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'Server is healthy' });
 });
