@@ -1,40 +1,40 @@
-# Simple Dockerfile for BPTAPPV5
-FROM node:18-alpine
+# Multi-stage build for BPT Application V5
 
-# Create app directory
-WORKDIR /app
-
-# Copy server package.json and package-lock.json
-COPY server/package*.json ./
-
-# Install server dependencies
+# Build stage for client
+FROM node:18-alpine AS client-build
+WORKDIR /app/client
+COPY client/package*.json ./
 RUN npm install
+COPY client/ ./
+RUN npm run build
 
-# Copy server files
+# Build stage for server
+FROM node:18-alpine AS server-build
+WORKDIR /app/server
+COPY server/package*.json ./
+RUN npm install --only=production
 COPY server/ ./
 
-# Create a public directory for static files
-RUN mkdir -p public
-
-# Create a simple index.html for the public directory
-RUN echo '<!DOCTYPE html><html><head><title>Bright Prodigy Tools</title></head><body><h1>Bright Prodigy Tools API Server</h1><p>API server is running.</p></body></html>' > public/index.html
+# Production stage
+FROM node:18-alpine
+WORKDIR /app
 
 # Create a non-root user
 RUN addgroup --system appgroup && \
     adduser --system --ingroup appgroup appuser
 
-# Set ownership
-RUN chown -R appuser:appgroup /app
+# Copy built artifacts
+COPY --from=server-build --chown=appuser:appgroup /app/server ./server
+COPY --from=client-build --chown=appuser:appgroup /app/client/build ./server/public
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Expose the port
-EXPOSE 8080
-
-# Switch to non-root user
+# Set ownership
+WORKDIR /app/server
 USER appuser
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
