@@ -126,7 +126,7 @@ export PROJECT_ID=your-project-id
 gcloud services enable cloudbuild.googleapis.com run.googleapis.com artifactregistry.googleapis.com
 
 # Create Artifact Registry repository - THIS STEP IS REQUIRED BEFORE DEPLOYMENT
-gcloud artifacts repositories create bptappv5-repo --repository-format=docker --location=us-west2 --description="Repository for BPTAPPV5"
+gcloud artifacts repositories create prod-images --repository-format=docker --location=us-west2 --description="Production images repository"
 ```
 
 2. Update the substitution variables in `cloudbuild.yaml` if needed:
@@ -156,20 +156,20 @@ If you prefer to deploy manually:
 1. Build and tag the Docker image locally (requires Docker installed):
 
 ```bash
-docker build -t us-west2-docker.pkg.dev/$PROJECT_ID/bpt-app-repo/bptappv5:latest .
+docker build -t us-west2-docker.pkg.dev/brightprodigyapp/prod-images/bright-prodigy-app:latest .
 ```
 
 2. Push the image to Artifact Registry:
 
 ```bash
-docker push us-west2-docker.pkg.dev/$PROJECT_ID/bpt-app-repo/bptappv5:latest
+docker push us-west2-docker.pkg.dev/brightprodigyapp/prod-images/bright-prodigy-app:latest
 ```
 
 3. Deploy to Cloud Run:
 
 ```bash
-gcloud run deploy bptappv5 \
-  --image us-west2-docker.pkg.dev/$PROJECT_ID/bpt-app-repo/bptappv5:latest \
+gcloud run deploy bright-prodigy-app \
+  --image us-west2-docker.pkg.dev/brightprodigyapp/prod-images/bright-prodigy-app:latest \
   --platform managed \
   --region us-west2 \
   --allow-unauthenticated \
@@ -183,10 +183,10 @@ After deployment, you can monitor your service and view logs:
 
 ```bash
 # View service status
-gcloud run services describe bptappv5 --region us-west2
+gcloud run services describe bright-prodigy-app --region us-west2
 
 # View logs
-gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=bptappv5" --limit=50
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=bright-prodigy-app" --limit=50
 ```
 
 ### Troubleshooting Deployment Issues
