@@ -1,62 +1,43 @@
-# Cloud Build configuration for BPTAPPV5
 steps:
-  # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
         'build',
         '--no-cache',
-        '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/bptappv5:$COMMIT_SHA',
-        '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/bptappv5:latest',
-        '--build-arg', 'NODE_ENV=production',
+        '-t', 'us-west2-docker.pkg.dev/brightprodigyapp/prod-images/bright-prodigy-app:$COMMIT_SHA',
+        '-t', 'us-west2-docker.pkg.dev/brightprodigyapp/prod-images/bright-prodigy-app:latest',
         '.'
       ]
-    id: 'build'
-    timeout: '1200s'  # Allow up to 20 minutes for build
-
-  # Push the container image to Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      [
-        'push',
-        '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/bptappv5:$COMMIT_SHA'
-      ]
-    id: 'push-version'
-    waitFor: ['build']
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
         'push',
-        '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/bptappv5:latest'
+        'us-west2-docker.pkg.dev/brightprodigyapp/prod-images/bright-prodigy-app:$COMMIT_SHA'
       ]
-    id: 'push-latest'
-    waitFor: ['build']
 
-  # Deploy to Cloud Run
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'push',
+        'us-west2-docker.pkg.dev/brightprodigyapp/prod-images/bright-prodigy-app:latest'
+      ]
+
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
+    entrypoint: gcloud
     args:
       [
-        'run', 'deploy', 'bptappv5',
-        '--image', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/bptappv5:$COMMIT_SHA',
-        '--region', '${_REGION}',
+        'run', 'deploy', 'bright-prodigy-app',
+        '--image', 'us-west2-docker.pkg.dev/brightprodigyapp/prod-images/bright-prodigy-app:latest',
+        '--region', 'us-west2',
         '--platform', 'managed',
-        '--allow-unauthenticated',
-        '--memory', '512Mi',
-        '--set-env-vars', 'NODE_ENV=production'
+        '--allow-unauthenticated'
       ]
-    id: 'deploy'
-    waitFor: ['push-version', 'push-latest']
 
 images:
-  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/bptappv5:$COMMIT_SHA'
-  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/bptappv5:latest'
-
-substitutions:
-  _REGION: us-west2
-  _REPOSITORY: bpt-app-repo
+  - 'us-west2-docker.pkg.dev/brightprodigyapp/prod-images/bright-prodigy-app:$COMMIT_SHA'
+  - 'us-west2-docker.pkg.dev/brightprodigyapp/prod-images/bright-prodigy-app:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  dynamic_substitutions: true
+

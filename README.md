@@ -125,8 +125,8 @@ export PROJECT_ID=your-project-id
 # Enable required APIs
 gcloud services enable cloudbuild.googleapis.com run.googleapis.com artifactregistry.googleapis.com
 
-# Create Artifact Registry repository
-gcloud artifacts repositories create bpt-app-repo --repository-format=docker --location=us-west2 --description="Repository for BPTAPPV5"
+# Create Artifact Registry repository - THIS STEP IS REQUIRED BEFORE DEPLOYMENT
+gcloud artifacts repositories create bptappv5-repo --repository-format=docker --location=us-west2 --description="Repository for BPTAPPV5"
 ```
 
 2. Update the substitution variables in `cloudbuild.yaml` if needed:
