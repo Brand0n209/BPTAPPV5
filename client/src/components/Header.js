@@ -1,78 +1,124 @@
-import React from 'react';
-import AppBar from '@mui/material/AppBar';
+import React, { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import MenuIcon from '@mui/icons-material/Menu';
-import AccountCircle from '@mui/icons-material/AccountCircle';
-import MenuItem from '@mui/material/MenuItem';
-import Menu from '@mui/material/Menu';
-import { useTheme } from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
+import { useLocation } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faGauge,
+  faCalendarPlus,
+  faLink,
+  faCalendarAlt,
+  faUserPlus,
+  faUsersCog,
+  faFileInvoiceDollar,
+  faCog,
+  faTools,
+  faSlidersH,
+  faFileSignature
+} from '@fortawesome/free-solid-svg-icons';
 
-function Header({ handleDrawerToggle }) {
-  const [anchorEl, setAnchorEl] = React.useState(null);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+// Map routes to page names and icons
+const PAGE_META = {
+  '/': { title: 'Dashboard', icon: faGauge },
+  '/scheduler-create': { title: 'Create Event', icon: faCalendarPlus },
+  '/scheduler-ongoing': { title: 'Ongoing Jobs', icon: faLink },
+  '/scheduler-manage': { title: 'Manage Events', icon: faCalendarAlt },
+  '/add-sub': { title: 'Add Sub', icon: faUserPlus },
+  '/manage-subs': { title: 'Manage Subs', icon: faUsersCog },
+  '/invoice-create': { title: 'Invoices', icon: faFileInvoiceDollar },
+  '/settings': { title: 'Quick Settings', icon: faCog },
+  '/quote-tools': { title: 'Quote Tools', icon: faTools }
+};
 
-  const handleMenu = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
+function Header() {
+  const location = useLocation();
+  const meta = PAGE_META[location.pathname] || {};
+  const pageTitle = meta.title || '';
+  const pageIcon = meta.icon || faSlidersH;
 
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
+  // Date and time state
+  const [dateTime, setDateTime] = useState(() => new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setDateTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const formattedDate = dateTime.toLocaleDateString(undefined, {
+    year: 'numeric', month: 'short', day: 'numeric'
+  });
+  const formattedTime = dateTime.toLocaleTimeString(undefined, {
+    hour: '2-digit', minute: '2-digit'
+  });
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Bright Prodigy Tools
-          </Typography>
-          <div>
-            <IconButton
-              size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleMenu}
-              color="inherit"
-            >
-              <AccountCircle />
-            </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorEl}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={Boolean(anchorEl)}
-              onClose={handleClose}
-            >
-              <MenuItem onClick={handleClose}>Profile</MenuItem>
-              <MenuItem onClick={handleClose}>Settings</MenuItem>
-              <MenuItem onClick={handleClose}>Logout</MenuItem>
-            </Menu>
-          </div>
-        </Toolbar>
-      </AppBar>
+    <Box
+      sx={{
+        width: '100%',
+        height: '54px',
+        background: '#6cb6f5',
+        color: '#222',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '2.1em',
+        fontWeight: 700,
+        letterSpacing: '0.02em',
+        zIndex: 10,
+        fontFamily: `'Inter', 'Segoe UI', Arial, sans-serif`,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        px: 2
+      }}
+      className="app-header"
+    >
+      {/* Left: Brand */}
+      <Box
+        sx={{
+          flex: '0 0 auto',
+          minWidth: 140,
+          textAlign: 'left',
+          fontWeight: 900,
+          color: '#111',
+          fontSize: '0.95em',
+          lineHeight: 1,
+          letterSpacing: '0.01em',
+          fontFamily: `'Inter', 'Segoe UI', Arial, sans-serif`
+        }}
+      >
+        Bright Prodigy
+      </Box>
+      {/* Center: Page Icon + Title */}
+      <Box
+        sx={{
+          flex: '1 1 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 700,
+          fontSize: '1em',
+          color: '#111'
+        }}
+      >
+        <FontAwesomeIcon icon={pageIcon} style={{ marginRight: 18, color: '#111', fontSize: '0.85em', verticalAlign: 'middle' }} />
+        {pageTitle}
+      </Box>
+      {/* Right: Date and Time */}
+      <Box
+        sx={{
+          flex: '0 0 auto',
+          minWidth: 220,
+          textAlign: 'right',
+          fontWeight: 500,
+          fontSize: '0.65em',
+          color: '#222',
+          fontFamily: `'Inter', 'Segoe UI', Arial, sans-serif`
+        }}
+      >
+        <span>{formattedDate}</span>
+        <span style={{ marginLeft: 12 }}>{formattedTime}</span>
+      </Box>
     </Box>
   );
 }

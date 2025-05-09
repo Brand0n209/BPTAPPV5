@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bright Prodigy API</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+        h2 {
+            color: #3498db;
+            margin-top: 2rem;
+        }
+        code {
+            background-color: #f8f8f8;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+            color: #e74c3c;
+        }
+        pre {
+            background-color: #f8f8f8;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .endpoint {
+            margin-bottom: 2rem;
+            border-left: 4px solid #3498db;
+            padding-left: 1rem;
+        }
+        .method {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            color: white;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        .get {
+            background-color: #2ecc71;
+        }
+        .post {
+            background-color: #3498db;
+        }
+        .delete {
+            background-color: #e74c3c;
+        }
+        .url {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bright Prodigy API</h1>
+    <p>Welcome to the Bright Prodigy API server. This API provides access to calendar services and more.</p>
+    
+    <h2>Health Check</h2>
+    <div class="endpoint">
+        <div><span class="method get">GET</span> <span class="url">/health</span></div>
+        <p>Check the health status of the API.</p>
+        <pre><code>{"status":"OK","message":"Server is healthy"}</code></pre>
+    </div>
+    
+    <h2>Calendar API</h2>
+    
+    <div class="endpoint">
+        <div><span class="method get">GET</span> <span class="url">/api/calendar/:id/events</span></div>
+        <p>Get events from a calendar.</p>
+        <p>Available calendar IDs: <code>greetings</code>, <code>brightProdigy</code>, <code>crew1</code>, <code>pending</code></p>
+        <p>Optional query parameters:</p>
+        <ul>
+            <li><code>timeMin</code> - Start date (ISO string)</li>
+            <li><code>timeMax</code> - End date (ISO string)</li>
+            <li><code>maxResults</code> - Maximum number of events to return</li>
+        </ul>
+    </div>
+    
+    <div class="endpoint">
+        <div><span class="method post">POST</span> <span class="url">/api/calendar/:id/event</span></div>
+        <p>Create a new event in a calendar.</p>
+        <p>Available calendar IDs: <code>greetings</code>, <code>brightProdigy</code>, <code>crew1</code>, <code>pending</code></p>
+        <p>Example request body:</p>
+        <pre><code>{
+  "summary": "Team Meeting",
+  "description": "Weekly team status update",
+  "start": {
+    "dateTime": "2023-06-15T10:00:00-07:00",
+    "timeZone": "America/Los_Angeles"
+  },
+  "end": {
+    "dateTime": "2023-06-15T11:00:00-07:00",
+    "timeZone": "America/Los_Angeles"
+  },
+  "attendees": [
+    {
+      "email": "team@brightprodigy.com",
+      "displayName": "Bright Prodigy Team"
+    }
+  ]
+}</code></pre>
+    </div>
+    
+    <div class="endpoint">
+        <div><span class="method delete">DELETE</span> <span class="url">/api/calendar/:id/event/:eventId</span></div>
+        <p>Delete an event from a calendar.</p>
+        <p>Available calendar IDs: <code>greetings</code>, <code>brightProdigy</code>, <code>crew1</code>, <code>pending</code></p>
+    </div>
+    
+    <footer style="margin-top: 3rem; border-top: 1px solid #eee; padding-top: 1rem; color: #7f8c8d;">
+        <p>Bright Prodigy API Server © 2025</p>
+    </footer>
+</body>
+</html>

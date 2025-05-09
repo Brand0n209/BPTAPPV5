@@ -24,6 +24,12 @@ spec:
               value: "production"
             - name: PORT
               value: "8080"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/app/server/google-credentials.json"
+            - name: GOOGLE_SHEETS_ID
+              value: "your-google-sheets-id"
+            - name: GOOGLE_CALENDAR_ID
+              value: "your-google-calendar-id"
           startupProbe:
             httpGet:
               path: /health

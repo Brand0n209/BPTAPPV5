@@ -1,240 +1,300 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Box, 
-  Grid, 
-  Paper, 
   Typography, 
   Button, 
+  Grid, 
   Card, 
-  CardContent,
-  CardActions,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  CircularProgress
+  CardContent 
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EventIcon from '@mui/icons-material/Event';
-import PeopleIcon from '@mui/icons-material/People';
-import CalculateIcon from '@mui/icons-material/Calculate';
+
+// Import FontAwesome icons
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faGauge, 
+  faCalendarPlus, 
+  faCalendarAlt, 
+  faUserPlus, 
+  faUsersCog,
+  faFileInvoiceDollar,
+  faTools,
+  faCog,
+  faLink
+} from '@fortawesome/free-solid-svg-icons';
+
+// Import our custom components
+import { LoadingContext, NotificationContext } from '../App';
 
 function Dashboard() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    submissions: 0,
-    scheduledEvents: 0,
-    pendingEvents: 0,
-    completedEvents: 0
+  const { setLoading } = useContext(LoadingContext);
+  const { showNotification } = useContext(NotificationContext);
+  const [updateText, setUpdateText] = useState('Loading updates...');
+  const [statsText, setStatsText] = useState('Coming soon...');
+  const [systemStatus, setSystemStatus] = useState('Checking...');
+  const [usageStats, setUsageStats] = useState({
+    users: 0,
+    jobs: 0,
+    invoices: 0,
+    revenue: 0
   });
-  const [recentSubmissions, setRecentSubmissions] = useState([]);
-  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [envInfo, setEnvInfo] = useState({
+    version: '1.0.0',
+    build: '2025-05-07',
+    node: ''
+  });
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        // Fetch stats from API
-        const statsResponse = await fetch('/api/dashboard/stats');
-        if (statsResponse.ok) {
-          const statsData = await statsResponse.json();
-          setStats(statsData);
-        }
-        
-        // Fetch recent submissions
-        const submissionsResponse = await fetch('/api/submissions?limit=3');
-        if (submissionsResponse.ok) {
-          const submissionsData = await submissionsResponse.json();
-          setRecentSubmissions(submissionsData);
-        }
-        
-        // Fetch upcoming events
-        const eventsResponse = await fetch('/api/calendar/events?upcoming=true&limit=3');
-        if (eventsResponse.ok) {
-          const eventsData = await eventsResponse.json();
-          setUpcomingEvents(eventsData);
-        }
-        
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setLoading(false);
-      }
-    };
+    // Simulate fetching system status
+    setTimeout(() => setSystemStatus('All systems operational'), 500);
 
-    fetchDashboardData();
-  }, []);
+    // Simulate fetching usage stats
+    setTimeout(() => setUsageStats({
+      users: 42,
+      jobs: 128,
+      invoices: 87,
+      revenue: 24500
+    }), 700);
 
-  const StatCard = ({ title, value, icon, color, onClick }) => (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: color }}>
-      <CardContent sx={{ flexGrow: 1 }}>
-        <Box display="flex" alignItems="center" mb={2}>
-          {icon}
-          <Typography variant="h6" component="div" ml={1}>
-            {title}
-          </Typography>
-        </Box>
-        <Typography variant="h3" component="div">
-          {value}
-        </Typography>
-      </CardContent>
-      <Divider />
-      <CardActions>
-        <Button size="small" onClick={onClick}>View Details</Button>
-      </CardActions>
-    </Card>
+    // Simulate fetching recent activity
+    setTimeout(() => setRecentActivity([
+      { type: 'Job', desc: 'Created event for John Doe', time: '2 min ago' },
+      { type: 'Invoice', desc: 'Generated invoice #1023', time: '10 min ago' },
+      { type: 'User', desc: 'Added new sub Alice Smith', time: '1 hour ago' }
+    ]), 900);
+
+    // Fetch environment info from backend
+    fetch('/api/dashboard/env')
+      .then(async res => {
+        if (!res.ok) {
+          setEnvInfo({ error: `Failed to load environment info (status ${res.status})` });
+          return;
+        }
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          setEnvInfo({ error: 'Failed to load environment info (not JSON response)' });
+          return;
+        }
+        try {
+          const data = await res.json();
+          setEnvInfo(data);
+        } catch (e) {
+          setEnvInfo({ error: 'Failed to load environment info (invalid JSON)' });
+        }
+      })
+      .catch(() => setEnvInfo({ error: 'Failed to load environment info (network error)' }));
+
+    // Simulate fetching updates
+    setLoading(true);
+    setTimeout(() => {
+      setUpdateText('Welcome to the new dashboard! All systems are running smoothly.');
+      setLoading(false);
+    }, 1200);
+  }, [setLoading]);
+
+  // Handle navigation to different modules
+  const handleNavigation = (module, action = null) => {
+    let path = '/';
+    switch (module) {
+      case 'dash':
+        path = '/';
+        break;
+      case 'scheduler':
+        if (action === 'create') path = '/scheduler-create';
+        else if (action === 'manage') path = '/scheduler-manage';
+        else if (action === 'ongoing') path = '/scheduler-ongoing';
+        break;
+      case 'add-sub':
+        path = '/add-sub';
+        break;
+      case 'manage-subs':
+        path = '/manage-subs';
+        break;
+      case 'invoice-create':
+        path = '/invoice-create';
+        break;
+      case 'quote-tools':
+        path = '/quote-tools';
+        break;
+      case 'settings':
+        path = '/settings';
+        break;
+      default:
+        path = '/';
+    }
+    navigate(path);
+  };
+
+  // Quick Nav Button component for consistent styling
+  const QuickNavButton = ({ icon, title, description, onClick }) => (
+    <Button 
+      variant="outlined" 
+      color="primary"
+      onClick={onClick}
+      sx={{
+        minWidth: '180px',
+        maxWidth: '180px',
+        width: '180px',
+        textAlign: 'center',
+        whiteSpace: 'normal',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        padding: '10px 5px',
+        gap: '5px',
+        borderRadius: '7px'
+      }}
+    >
+      <FontAwesomeIcon icon={icon} style={{ fontSize: '2em' }} />
+      <Typography variant="button" sx={{ mt: 1 }}>
+        {title}
+      </Typography>
+      <Typography variant="caption" sx={{ 
+        fontSize: '0.85em', 
+        color: '#6c757d', 
+        lineHeight: 1.2 
+      }}>
+        {description}
+      </Typography>
+    </Button>
   );
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Dashboard
-      </Typography>
-      
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard 
-            title="Total Submissions" 
-            value={stats.submissions} 
-            icon={<PeopleIcon />} 
-            color="#f3f9ff"
-            onClick={() => navigate('/manage-subs')}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard 
-            title="Scheduled Events" 
-            value={stats.scheduledEvents} 
-            icon={<EventIcon />}
-            color="#f5fff3"
-            onClick={() => navigate('/scheduler-manage')}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard 
-            title="Pending Events" 
-            value={stats.pendingEvents} 
-            icon={<EventIcon />}
-            color="#fffaf3"
-            onClick={() => navigate('/scheduler-ongoing')}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard 
-            title="Completed Events" 
-            value={stats.completedEvents} 
-            icon={<EventIcon />}
-            color="#fff3f3"
-            onClick={() => navigate('/scheduler-manage')}
-          />
-        </Grid>
-      </Grid>
-      
-      {/* Quick Actions */}
-      <Paper sx={{ p: 2, mb: 4 }}>
-        <Typography variant="h6" component="h2" gutterBottom>
-          Quick Actions
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item>
-            <Button 
-              variant="contained" 
-              startIcon={<AddIcon />}
-              onClick={() => navigate('/add-sub')}
-            >
-              New Submission
-            </Button>
-          </Grid>
-          <Grid item>
-            <Button 
-              variant="contained" 
-              startIcon={<EventIcon />}
-              onClick={() => navigate('/scheduler-create')}
-            >
-              Schedule Event
-            </Button>
-          </Grid>
-          <Grid item>
-            <Button 
-              variant="contained" 
-              startIcon={<CalculateIcon />}
-              onClick={() => navigate('/quote-tools')}
-            >
-              Quote Tool
-            </Button>
-          </Grid>
-        </Grid>
-      </Paper>
-      
-      {/* Recent Submissions and Upcoming Events */}
+    <Box sx={{ flexGrow: 1 }}>
+      {/* Quick Navigation at the top */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+            Quick Navigation
+          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: '1rem'
+            }}
+          >
+            <QuickNavButton
+              icon={faGauge}
+              title="Dash"
+              description="Overview and latest updates"
+              onClick={() => handleNavigation('dash')}
+            />
+            <QuickNavButton
+              icon={faCalendarPlus}
+              title="Create Event"
+              description="Schedule a new job"
+              onClick={() => handleNavigation('scheduler', 'create')}
+            />
+            <QuickNavButton
+              icon={faLink}
+              title="Ongoing Jobs"
+              description="Continue / split an existing job"
+              onClick={() => handleNavigation('scheduler', 'ongoing')}
+            />
+            <QuickNavButton
+              icon={faCalendarAlt}
+              title="Manage Events"
+              description="View / edit / delete all scheduled events"
+              onClick={() => handleNavigation('scheduler', 'manage')}
+            />
+            <QuickNavButton
+              icon={faUserPlus}
+              title="Add Sub"
+              description="Add a new sub"
+              onClick={() => handleNavigation('add-sub')}
+            />
+            <QuickNavButton
+              icon={faUsersCog}
+              title="Manage Subs"
+              description="Edit or remove subs"
+              onClick={() => handleNavigation('manage-subs')}
+            />
+            <QuickNavButton
+              icon={faFileInvoiceDollar}
+              title="Invoices"
+              description="Create / download invoices"
+              onClick={() => handleNavigation('invoice-create')}
+            />
+            <QuickNavButton
+              icon={faCog}
+              title="Settings"
+              description="Configure app preferences"
+              onClick={() => handleNavigation('settings')}
+            />
+            <QuickNavButton
+              icon={faTools}
+              title="Quote Tools"
+              description="Access quoting tools and customer search"
+              onClick={() => handleNavigation('quote-tools')}
+            />
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Technical Dashboard Information */}
       <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2, height: '100%' }}>
-            <Typography variant="h6" component="h2" gutterBottom>
-              Recent Submissions
-            </Typography>
-            <List>
-              {recentSubmissions.map((submission) => (
-                <React.Fragment key={submission.id}>
-                  <ListItem>
-                    <ListItemText 
-                      primary={submission.name} 
-                      secondary={`${submission.date} - ${submission.service}`} 
-                    />
-                  </ListItem>
-                  <Divider component="li" />
-                </React.Fragment>
-              ))}
-            </List>
-            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-              <Button 
-                size="small" 
-                onClick={() => navigate('/manage-subs')}
-              >
-                View All
-              </Button>
-            </Box>
-          </Paper>
+        {/* System Status */}
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>System Status</Typography>
+              <Typography variant="body2">{systemStatus}</Typography>
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2, height: '100%' }}>
-            <Typography variant="h6" component="h2" gutterBottom>
-              Upcoming Events
-            </Typography>
-            <List>
-              {upcomingEvents.map((event) => (
-                <React.Fragment key={event.id}>
-                  <ListItem>
-                    <ListItemText 
-                      primary={event.title} 
-                      secondary={`${event.date} - ${event.client}`} 
-                    />
-                  </ListItem>
-                  <Divider component="li" />
-                </React.Fragment>
-              ))}
-            </List>
-            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-              <Button 
-                size="small" 
-                onClick={() => navigate('/scheduler-manage')}
-              >
-                View All
-              </Button>
-            </Box>
-          </Paper>
+        {/* Usage Stats */}
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Usage Stats</Typography>
+              <Typography variant="body2">Active Users: {usageStats.users}</Typography>
+              <Typography variant="body2">Jobs/Events: {usageStats.jobs}</Typography>
+              <Typography variant="body2">Invoices: {usageStats.invoices}</Typography>
+              <Typography variant="body2">Revenue: ${usageStats.revenue.toLocaleString()}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        {/* Recent Activity */}
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Recent Activity</Typography>
+              {recentActivity.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">Loading...</Typography>
+              ) : (
+                recentActivity.map((act, idx) => (
+                  <Typography key={idx} variant="body2">
+                    <b>{act.type}:</b> {act.desc} <span style={{ color: '#888', fontSize: '0.9em' }}>({act.time})</span>
+                  </Typography>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+        {/* Environment Info */}
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Environment</Typography>
+              <Typography variant="body2">App Version: {envInfo.version}</Typography>
+              <Typography variant="body2">Build: {envInfo.build}</Typography>
+              <Typography variant="body2">Node: {envInfo.node}</Typography>
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
+
+      {/* Updates Section */}
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Updates</Typography>
+          <Typography variant="body2">{updateText}</Typography>
+        </CardContent>
+      </Card>
     </Box>
   );
 }

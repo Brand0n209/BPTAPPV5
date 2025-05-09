@@ -30,6 +30,9 @@ COPY --from=client-build --chown=appuser:appgroup /app/client/build ./server/pub
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=8080
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/server/google-credentials.json
+ENV GOOGLE_SHEETS_ID=your-google-sheets-id
+ENV GOOGLE_CALENDAR_ID=your-google-calendar-id
 
 # Set ownership
 WORKDIR /app/server

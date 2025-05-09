@@ -1,170 +1,170 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Box, 
-  Paper, 
   Typography, 
   TextField, 
   Button, 
-  Grid, 
-  FormControl, 
-  InputLabel, 
   Select, 
   MenuItem, 
-  Snackbar, 
-  Alert, 
-  CircularProgress 
+  FormControl,
+  InputLabel,
+  FormHelperText,
+  Grid,
+  Snackbar,
+  Alert,
+  CircularProgress,
+  Paper
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
-import { useNavigate } from 'react-router-dom';
+import calendarService from '../services/calendarService';
 
 function SchedulerCreate() {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [customerLoading, setCustomerLoading] = useState(false);
-  const [customers, setCustomers] = useState([]);
-  const [technicians, setTechnicians] = useState([]);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success'
+  const [formData, setFormData] = useState({
+    summary: '',
+    description: '',
+    location: '',
+    start: new Date(),
+    end: new Date(new Date().getTime() + 60 * 60 * 1000), // Default to 1 hour later
+    calendarId: 'pending' // Default to pending calendar
   });
   
-  const [eventData, setEventData] = useState({
-    title: '',
-    description: '',
-    startTime: null,
-    endTime: null,
-    customerId: '',
-    technicianId: '',
-    eventType: '',
-    location: '',
-    notes: ''
+  const [formErrors, setFormErrors] = useState({
+    summary: '',
+    start: '',
+    end: ''
   });
-
-  const eventTypes = [
-    'Consultation',
-    'Installation',
-    'Maintenance',
-    'Repair',
-    'Follow-up',
-    'Other'
-  ];
-
+  
+  const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState({
+    open: false,
+    message: '',
+    severity: 'info'
+  });
+  
+  const [calendars, setCalendars] = useState([]);
+  
+  // Initialize calendars
   useEffect(() => {
-    // Fetch customers and technicians data
-    fetchCustomers();
-    fetchTechnicians();
+    const options = calendarService.getCalendarOptions()
+      .filter(cal => cal.value !== 'all'); // Remove "All Calendars" option
+    
+    setCalendars(options);
   }, []);
-
-  const fetchCustomers = async () => {
-    setCustomerLoading(true);
-    try {
-      const response = await fetch('/api/customers');
-      if (!response.ok) {
-        throw new Error('Failed to fetch customers');
-      }
-      const data = await response.json();
-      setCustomers(data);
-    } catch (error) {
-      console.error('Error fetching customers:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to load customers. Please try again.',
-        severity: 'error'
-      });
-    } finally {
-      setCustomerLoading(false);
-    }
-  };
-
-  const fetchTechnicians = async () => {
-    try {
-      const response = await fetch('/api/technicians');
-      if (!response.ok) {
-        throw new Error('Failed to fetch technicians');
-      }
-      const data = await response.json();
-      setTechnicians(data);
-    } catch (error) {
-      console.error('Error fetching technicians:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to load technicians. Please try again.',
-        severity: 'error'
-      });
-    }
-  };
-
-  const handleChange = (e) => {
+  
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setEventData(prevState => ({
-      ...prevState,
+    setFormData({
+      ...formData,
       [name]: value
-    }));
-  };
-
-  const handleDateChange = (field, date) => {
-    setEventData(prevState => ({
-      ...prevState,
-      [field]: date
-    }));
-  };
-
-  const handleCustomerChange = (e) => {
-    const customerId = e.target.value;
-    setEventData(prevState => ({
-      ...prevState,
-      customerId
-    }));
-
-    // If a customer is selected, try to pre-fill some fields
-    if (customerId) {
-      const selectedCustomer = customers.find(c => c.id === customerId);
-      if (selectedCustomer) {
-        setEventData(prevState => ({
-          ...prevState,
-          location: selectedCustomer.address || '',
-          title: `${selectedCustomer.service || 'Appointment'} - ${selectedCustomer.firstName} ${selectedCustomer.lastName}`
-        }));
-      }
+    });
+    
+    // Clear error when field is edited
+    if (formErrors[name]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: ''
+      });
     }
   };
-
+  
+  const handleDateChange = (field) => (date) => {
+    setFormData({
+      ...formData,
+      [field]: date
+    });
+    
+    // Clear error when field is edited
+    if (formErrors[field]) {
+      setFormErrors({
+        ...formErrors,
+        [field]: ''
+      });
+    }
+  };
+  
+  const validateForm = () => {
+    const errors = {
+      summary: '',
+      start: '',
+      end: ''
+    };
+    
+    let isValid = true;
+    
+    // Check required fields
+    if (!formData.summary.trim()) {
+      errors.summary = 'Event title is required';
+      isValid = false;
+    }
+    
+    if (!formData.start) {
+      errors.start = 'Start date/time is required';
+      isValid = false;
+    }
+    
+    if (!formData.end) {
+      errors.end = 'End date/time is required';
+      isValid = false;
+    }
+    
+    // Check start is before end
+    if (formData.start && formData.end && formData.end <= formData.start) {
+      errors.end = 'End time must be after start time';
+      isValid = false;
+    }
+    
+    setFormErrors(errors);
+    return isValid;
+  };
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
     
     try {
-      // Create calendar event
-      const response = await fetch('/api/calendar/events', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const eventData = {
+        summary: formData.summary,
+        description: formData.description,
+        location: formData.location,
+        start: {
+          dateTime: formData.start.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
         },
-        body: JSON.stringify(eventData),
-      });
+        end: {
+          dateTime: formData.end.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        }
+      };
       
-      if (!response.ok) {
-        throw new Error('Error creating calendar event');
-      }
+      const result = await calendarService.createEvent(formData.calendarId, eventData);
       
-      setSnackbar({
+      setAlert({
         open: true,
-        message: 'Event scheduled successfully!',
+        message: 'Event created successfully!',
         severity: 'success'
       });
       
-      // Redirect to manage scheduler after success
-      setTimeout(() => {
-        navigate('/scheduler-manage');
-      }, 2000);
+      // Reset form
+      setFormData({
+        summary: '',
+        description: '',
+        location: '',
+        start: new Date(),
+        end: new Date(new Date().getTime() + 60 * 60 * 1000),
+        calendarId: 'pending'
+      });
       
-    } catch (error) {
-      console.error('Error:', error);
-      setSnackbar({
+    } catch (err) {
+      console.error('Error creating event:', err);
+      setAlert({
         open: true,
-        message: 'Failed to schedule event. Please try again.',
+        message: `Failed to create event: ${err.message || 'Unknown error'}`,
         severity: 'error'
       });
     } finally {
@@ -172,212 +172,168 @@ function SchedulerCreate() {
     }
   };
 
-  const handleSnackbarClose = (event, reason) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setSnackbar({ ...snackbar, open: false });
-  };
-
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Schedule New Event
-        </Typography>
-        
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
-            {/* Basic Information */}
-            <Grid item xs={12}>
-              <Typography variant="h6" component="h2">
-                Event Information
-              </Typography>
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel id="customer-label">Customer</InputLabel>
-                <Select
-                  labelId="customer-label"
-                  name="customerId"
-                  value={eventData.customerId}
-                  label="Customer"
-                  onChange={handleCustomerChange}
-                  disabled={customerLoading}
-                >
-                  {customerLoading ? (
-                    <MenuItem disabled>Loading customers...</MenuItem>
-                  ) : (
-                    customers.map((customer) => (
-                      <MenuItem key={customer.id} value={customer.id}>
-                        {customer.firstName} {customer.lastName}
-                      </MenuItem>
-                    ))
-                  )}
-                </Select>
-              </FormControl>
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel id="event-type-label">Event Type</InputLabel>
-                <Select
-                  labelId="event-type-label"
-                  name="eventType"
-                  value={eventData.eventType}
-                  label="Event Type"
-                  onChange={handleChange}
-                >
-                  {eventTypes.map((type) => (
-                    <MenuItem key={type} value={type}>
-                      {type}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            
-            <Grid item xs={12}>
-              <TextField
-                required
-                fullWidth
-                label="Event Title"
-                name="title"
-                value={eventData.title}
-                onChange={handleChange}
-              />
-            </Grid>
-            
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Description"
-                name="description"
-                multiline
-                rows={2}
-                value={eventData.description}
-                onChange={handleChange}
-              />
-            </Grid>
-            
-            {/* Date/Time */}
-            <Grid item xs={12}>
-              <Typography variant="h6" component="h2">
-                Date and Time
-              </Typography>
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DateTimePicker
-                  label="Start Time"
-                  value={eventData.startTime}
-                  onChange={(date) => handleDateChange('startTime', date)}
-                  renderInput={(params) => <TextField {...params} required fullWidth />}
-                />
-              </LocalizationProvider>
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DateTimePicker
-                  label="End Time"
-                  value={eventData.endTime}
-                  onChange={(date) => handleDateChange('endTime', date)}
-                  renderInput={(params) => <TextField {...params} required fullWidth />}
-                />
-              </LocalizationProvider>
-            </Grid>
-            
-            {/* Additional Information */}
-            <Grid item xs={12}>
-              <Typography variant="h6" component="h2">
-                Additional Information
-              </Typography>
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel id="technician-label">Technician</InputLabel>
-                <Select
-                  labelId="technician-label"
-                  name="technicianId"
-                  value={eventData.technicianId}
-                  label="Technician"
-                  onChange={handleChange}
-                >
-                  {technicians.map((tech) => (
-                    <MenuItem key={tech.id} value={tech.id}>
-                      {tech.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Location"
-                name="location"
-                value={eventData.location}
-                onChange={handleChange}
-              />
-            </Grid>
-            
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Notes"
-                name="notes"
-                multiline
-                rows={4}
-                value={eventData.notes}
-                onChange={handleChange}
-              />
-            </Grid>
-            
-            {/* Submit Button */}
-            <Grid item xs={12}>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                size="large"
-                disabled={loading}
-                sx={{ mt: 2 }}
-              >
-                {loading ? <CircularProgress size={24} /> : 'Schedule Event'}
-              </Button>
-              <Button
-                variant="outlined"
-                color="secondary"
-                size="large"
-                onClick={() => navigate('/scheduler-manage')}
-                sx={{ mt: 2, ml: 2 }}
-              >
-                Cancel
-              </Button>
-            </Grid>
-          </Grid>
-        </form>
-      </Paper>
-      
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleSnackbarClose}
-      >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <Box sx={{ flexGrow: 1, marginTop: '48px' }}>
+        <Paper 
+          elevation={2}
+          sx={{
+            maxWidth: 800,
+            mx: 'auto',
+            p: 3,
+            borderRadius: 2
+          }}
         >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+          <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 3 }}>
+            Create New Calendar Event
+          </Typography>
+          
+          <form onSubmit={handleSubmit}>
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <TextField
+                  label="Event Title"
+                  name="summary"
+                  value={formData.summary}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required
+                  error={!!formErrors.summary}
+                  helperText={formErrors.summary}
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <DateTimePicker
+                  label="Start Date & Time"
+                  value={formData.start}
+                  onChange={handleDateChange('start')}
+                  renderInput={(params) => (
+                    <TextField 
+                      {...params} 
+                      fullWidth 
+                      error={!!formErrors.start}
+                      helperText={formErrors.start}
+                    />
+                  )}
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <DateTimePicker
+                  label="End Date & Time"
+                  value={formData.end}
+                  onChange={handleDateChange('end')}
+                  renderInput={(params) => (
+                    <TextField 
+                      {...params} 
+                      fullWidth 
+                      error={!!formErrors.end}
+                      helperText={formErrors.end}
+                    />
+                  )}
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Calendar</InputLabel>
+                  <Select
+                    name="calendarId"
+                    value={formData.calendarId}
+                    onChange={handleInputChange}
+                    label="Calendar"
+                  >
+                    {calendars.map((cal) => (
+                      <MenuItem key={cal.value} value={cal.value}>
+                        {cal.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <FormHelperText>Select which calendar to use</FormHelperText>
+                </FormControl>
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Location"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleInputChange}
+                  fullWidth
+                  placeholder="Optional location for this event"
+                />
+              </Grid>
+              
+              <Grid item xs={12}>
+                <TextField
+                  label="Description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  fullWidth
+                  multiline
+                  rows={4}
+                  placeholder="Details about this event"
+                />
+              </Grid>
+              
+              <Grid item xs={12} sx={{ mt: 2 }}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  disabled={loading}
+                  sx={{ minWidth: 150 }}
+                >
+                  {loading ? <CircularProgress size={24} /> : 'Create Event'}
+                </Button>
+                
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  size="large"
+                  sx={{ ml: 2 }}
+                  onClick={() => {
+                    // Reset form
+                    setFormData({
+                      summary: '',
+                      description: '',
+                      location: '',
+                      start: new Date(),
+                      end: new Date(new Date().getTime() + 60 * 60 * 1000),
+                      calendarId: 'pending'
+                    });
+                    setFormErrors({
+                      summary: '',
+                      start: '',
+                      end: ''
+                    });
+                  }}
+                >
+                  Reset
+                </Button>
+              </Grid>
+            </Grid>
+          </form>
+        </Paper>
+        
+        <Snackbar
+          open={alert.open}
+          autoHideDuration={6000}
+          onClose={() => setAlert({ ...alert, open: false })}
+        >
+          <Alert
+            onClose={() => setAlert({ ...alert, open: false })}
+            severity={alert.severity}
+            sx={{ width: '100%' }}
+          >
+            {alert.message}
+          </Alert>
+        </Snackbar>
+      </Box>
+    </LocalizationProvider>
   );
 }
 

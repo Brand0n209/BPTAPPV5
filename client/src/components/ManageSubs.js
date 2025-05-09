@@ -1,297 +1,283 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Button,
-  IconButton,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  TextField,
-  CircularProgress,
-  Snackbar,
-  Alert
-} from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EmailIcon from '@mui/icons-material/Email';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import React, { useState } from 'react';
+import { Box, Typography, Button, Grid, TextField, Alert, Snackbar, Divider } from '@mui/material';
 
 function ManageSubs() {
-  const [submissions, setSubmissions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedSubmission, setSelectedSubmission] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success'
+  // State for sub search
+  const [subSearch, setSubSearch] = useState('');
+  const [subResults, setSubResults] = useState([]);
+  const [selectedSub, setSelectedSub] = useState(null);
+
+  // State for sub form
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: '',
+    referral: '',
+    address: '',
+    city: '',
+    homeStories: '',
+    lightingOptions: '',
+    lightingSides: '',
+    prefServiceDateLighting: '',
+    measure: '',
+    lightingNotes: '',
+    solarSelectedServices: '',
+    prefServiceDateSolar: '',
+    solarPanels: '',
+    solarNotes: '',
+    gutterSelectedService: '',
+    prefServiceDateGutter: '',
+    gutterNotes: ''
   });
 
-  useEffect(() => {
-    fetchSubmissions();
-  }, []);
+  // State for UI
+  const [alert, setAlert] = useState({ open: false, message: '', severity: 'info' });
+  const [uiState, setUiState] = useState('prompt'); // prompt, loading, results, empty, form
 
-  const fetchSubmissions = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/submissions');
-      if (!response.ok) {
-        throw new Error('Failed to fetch submissions');
+  // Handlers for sub search
+  const handleSubSearchChange = (e) => setSubSearch(e.target.value);
+
+  const handleSubSearch = () => {
+    setUiState('loading');
+    // Simulate search (replace with API call)
+    setTimeout(() => {
+      if (subSearch.length < 2) {
+        setSubResults([]);
+        setUiState('prompt');
+        setAlert({ open: true, message: 'Please enter at least 2 characters to search', severity: 'warning' });
+        return;
       }
-      const data = await response.json();
-      setSubmissions(data);
-    } catch (error) {
-      console.error('Error fetching submissions:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to load submissions. Please try again.',
-        severity: 'error'
-      });
-    } finally {
-      setLoading(false);
-    }
+      // Example: return a single fake sub
+      setSubResults([
+        { id: 1, firstName: 'Alice', lastName: 'Smith', phone: '555-9876', email: 'alice@example.com', address: '789 Pine Rd', city: 'Sample City', referral: 'Google' }
+      ]);
+      setUiState('results');
+    }, 600);
   };
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
+  const handleSelectSub = (sub) => {
+    setSelectedSub(sub);
+    setForm({ ...form, ...sub });
+    setUiState('form');
   };
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+  // Handlers for sub form
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
-    setPage(0);
+  const handleUpdate = (e) => {
+    e.preventDefault();
+    setAlert({ open: true, message: 'Sub updated (simulated).', severity: 'success' });
+    setUiState('prompt');
+    setSelectedSub(null);
   };
 
-  const handleDeleteClick = (submission) => {
-    setSelectedSubmission(submission);
-    setDeleteDialogOpen(true);
+  const handleDelete = () => {
+    setAlert({ open: true, message: 'Sub deleted (simulated).', severity: 'success' });
+    setUiState('prompt');
+    setSelectedSub(null);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!selectedSubmission) return;
-
-    try {
-      const response = await fetch(`/api/submissions/${selectedSubmission.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete submission');
-      }
-
-      setSubmissions(submissions.filter(sub => sub.id !== selectedSubmission.id));
-      setSnackbar({
-        open: true,
-        message: 'Submission deleted successfully',
-        severity: 'success'
-      });
-    } catch (error) {
-      console.error('Error deleting submission:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to delete submission. Please try again.',
-        severity: 'error'
-      });
-    } finally {
-      setDeleteDialogOpen(false);
-      setSelectedSubmission(null);
-    }
+  const handleCancel = () => {
+    setUiState('prompt');
+    setSelectedSub(null);
   };
-
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-    setSelectedSubmission(null);
-  };
-
-  const handleScheduleClick = (submission) => {
-    // Navigate to scheduler with submission data
-    console.log('Schedule for submission:', submission);
-  };
-
-  const handleEmailClick = (submission) => {
-    // Send email to customer
-    console.log('Email to customer:', submission);
-  };
-
-  const handleSnackbarClose = (event, reason) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setSnackbar({ ...snackbar, open: false });
-  };
-
-  // Filter submissions based on search term
-  const filteredSubmissions = submissions.filter(submission => {
-    const searchString = searchTerm.toLowerCase();
-    const fullName = `${submission.firstName} ${submission.lastName}`.toLowerCase();
-    return fullName.includes(searchString) || 
-           submission.email?.toLowerCase().includes(searchString) ||
-           submission.phone?.includes(searchString) ||
-           submission.service?.toLowerCase().includes(searchString);
-  });
-
-  // Paginate submissions
-  const paginatedSubmissions = filteredSubmissions.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
-
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-        <CircularProgress />
-      </Box>
-    );
-  }
 
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Manage Submissions
-      </Typography>
-      
-      <Box mb={3}>
-        <TextField
-          fullWidth
-          label="Search Submissions"
-          variant="outlined"
-          value={searchTerm}
-          onChange={handleSearchChange}
-          placeholder="Search by name, email, phone, or service"
-          sx={{ mb: 2 }}
-        />
-      </Box>
-      
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="submissions table">
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Contact</TableCell>
-              <TableCell>Service</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {paginatedSubmissions.length > 0 ? (
-              paginatedSubmissions.map((submission) => (
-                <TableRow key={submission.id}>
-                  <TableCell>
-                    {submission.firstName} {submission.lastName}
-                  </TableCell>
-                  <TableCell>
-                    <div>{submission.email}</div>
-                    <div>{submission.phone}</div>
-                  </TableCell>
-                  <TableCell>{submission.service}</TableCell>
-                  <TableCell>
-                    {submission.installationDate ? new Date(submission.installationDate).toLocaleDateString() : 'Not set'}
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      color="primary"
-                      aria-label="edit submission"
-                      onClick={() => console.log('Edit:', submission.id)}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      color="error"
-                      aria-label="delete submission"
-                      onClick={() => handleDeleteClick(submission)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                    <IconButton
-                      color="info"
-                      aria-label="email customer"
-                      onClick={() => handleEmailClick(submission)}
-                    >
-                      <EmailIcon />
-                    </IconButton>
-                    <IconButton
-                      color="success"
-                      aria-label="schedule appointment"
-                      onClick={() => handleScheduleClick(submission)}
-                    >
-                      <CalendarMonthIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={5} align="center">
-                  No submissions found
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component="div"
-        count={filteredSubmissions.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-      
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={handleDeleteCancel}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
+    <Box sx={{ flexGrow: 1, marginTop: '48px', display: 'flex', height: 'calc(100vh - 48px)' }}>
+      {/* Left: Sub Search Panel */}
+      <Box
+        sx={{
+          width: 320,
+          minWidth: 320,
+          maxWidth: 320,
+          background: '#fff',
+          borderRight: '1px solid #e0e7ef',
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%'
+        }}
       >
-        <DialogTitle id="alert-dialog-title">Confirm Deletion</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Are you sure you want to delete the submission for {selectedSubmission ? `${selectedSubmission.firstName} ${selectedSubmission.lastName}` : ''}? 
-            This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error" autoFocus>
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-      
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>Search Subs</Typography>
+        <TextField
+          id="subSearchInput"
+          placeholder="Search by name, email, or phone"
+          size="small"
+          value={subSearch}
+          onChange={handleSubSearchChange}
+          fullWidth
+          onKeyPress={e => { if (e.key === 'Enter') handleSubSearch(); }}
+        />
+        <Button variant="contained" sx={{ mt: 1 }} onClick={handleSubSearch}>Search</Button>
+        <Divider sx={{ my: 2 }} />
+        {uiState === 'prompt' && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            You can edit subs and delete subs here!
+          </Typography>
+        )}
+        {uiState === 'loading' && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            Loading...
+          </Typography>
+        )}
+        {uiState === 'results' && subResults.length > 0 && (
+          <Box id="subsListWrapper" sx={{ mt: 2, flex: 1, overflowY: 'auto' }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>Select a sub:</Typography>
+            <ul className="list-group" style={{ padding: 0, margin: 0 }}>
+              {subResults.map((sub) => (
+                <li
+                  key={sub.id}
+                  className="list-group-item list-group-item-action"
+                  style={{ cursor: 'pointer', border: 'none', borderBottom: '1px solid #e0e7ef', padding: '12px 8px' }}
+                  onClick={() => handleSelectSub(sub)}
+                >
+                  <strong>{sub.firstName} {sub.lastName}</strong><br />
+                  <small>{sub.address}</small>
+                </li>
+              ))}
+            </ul>
+          </Box>
+        )}
+        {uiState === 'empty' && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            No Results
+          </Typography>
+        )}
+      </Box>
+      {/* Right: Sub Edit Form */}
+      <Box sx={{ flex: 1, p: 4, overflowY: 'auto', background: '#f7f9fb' }}>
+        {uiState === 'form' && (
+          <Box className="card" sx={{ p: 3, borderRadius: 2, boxShadow: 1, background: '#fff', maxWidth: 700, margin: '0 auto' }}>
+            <form id="editSubForm" autoComplete="off" onSubmit={handleUpdate}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>Edit Sub</Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="First Name"
+                    name="firstName"
+                    value={form.firstName}
+                    onChange={handleFormChange}
+                    required
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Last Name"
+                    name="lastName"
+                    value={form.lastName}
+                    onChange={handleFormChange}
+                    required
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Phone"
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleFormChange}
+                    required
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleFormChange}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Referral"
+                    name="referral"
+                    value={form.referral}
+                    onChange={handleFormChange}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Address"
+                    name="address"
+                    value={form.address}
+                    onChange={handleFormChange}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="City"
+                    name="city"
+                    value={form.city}
+                    onChange={handleFormChange}
+                    fullWidth
+                  />
+                </Grid>
+                {/* Add more fields as needed, grouped as in the Apps Script UI */}
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 2 }} />
+                </Grid>
+                <Grid item xs={12}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                  >
+                    Update
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    color="secondary"
+                    onClick={handleCancel}
+                    sx={{ ml: 2 }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    color="error"
+                    onClick={handleDelete}
+                    sx={{ ml: 2 }}
+                  >
+                    Delete Sub
+                  </Button>
+                </Grid>
+              </Grid>
+            </form>
+          </Box>
+        )}
+        {uiState !== 'form' && (
+          <Box sx={{ textAlign: 'center', color: '#888', mt: 8 }}>
+            <Typography variant="body1">
+              Select a sub from the left to edit or delete.
+            </Typography>
+          </Box>
+        )}
+      </Box>
       <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleSnackbarClose}
+        open={alert.open}
+        autoHideDuration={5000}
+        onClose={() => setAlert({ ...alert, open: false })}
       >
         <Alert
-          onClose={handleSnackbarClose}
-          severity={snackbar.severity}
+          onClose={() => setAlert({ ...alert, open: false })}
+          severity={alert.severity}
           sx={{ width: '100%' }}
         >
-          {snackbar.message}
+          {alert.message}
         </Alert>
       </Snackbar>
     </Box>
