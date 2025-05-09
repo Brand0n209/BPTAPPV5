@@ -27,7 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
 // Serve static files from the React app
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, '../server/public')));
 
 // Health check endpoints
 app.get('/health', (req, res) => {

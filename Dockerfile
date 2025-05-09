@@ -14,6 +14,7 @@ WORKDIR /app/server
 COPY server/package*.json ./
 RUN npm install --only=production
 COPY server/ ./
+RUN npm run build
 
 # Production stage
 FROM node:18-alpine
@@ -30,6 +31,7 @@ COPY --from=client-build --chown=appuser:appgroup /app/client/build ./server/pub
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=8080
+ENV REACT_APP_API_URL=https://bright-prodigy-app-923339654929.us-west2.run.app
 ENV GOOGLE_APPLICATION_CREDENTIALS=/app/server/google-credentials.json
 ENV GOOGLE_SHEETS_ID=your-google-sheets-id
 ENV GOOGLE_CALENDAR_ID=your-google-calendar-id

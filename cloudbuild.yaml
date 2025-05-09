@@ -16,7 +16,6 @@ steps:
         'us-west2-docker.pkg.dev/brightprodigyapp/prod-images/bright-prodigy-app:$COMMIT_SHA'
       ]
 
-
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -25,7 +24,8 @@ steps:
         '--image', 'us-west2-docker.pkg.dev/brightprodigyapp/prod-images/bright-prodigy-app:latest',
         '--region', 'us-west2',
         '--platform', 'managed',
-        '--allow-unauthenticated'
+        '--allow-unauthenticated',
+        '--set-env-vars', 'NODE_ENV=production,PORT=8080,REACT_APP_API_URL=https://bright-prodigy-app-923339654929.us-west2.run.app,GOOGLE_APPLICATION_CREDENTIALS=/app/server/google-credentials.json,GOOGLE_SHEETS_ID=your-google-sheets-id,GOOGLE_CALENDAR_ID=your-google-calendar-id'
       ]
 
 images:

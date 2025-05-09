@@ -54,7 +54,7 @@ export interface CalendarEventResponse {
   // Additional Google Calendar API response fields
 }
 
-export type CalendarId = 'greetings' | 'brightProdigy' | 'crew1' | 'pending' | string;
+export type CalendarId =  'brightProdigy' | 'crew1' | 'pending' | string;
 
 export interface ErrorResponse {
   status: number;
